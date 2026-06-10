@@ -147,25 +147,8 @@ Tạo file `.env` từ file mẫu:
 copy .env.example .env
 ```
 
-Cấu hình `.env`:
 
-```env
-DASHSCOPE_API_KEY=your_alibaba_cloud_api_key
-DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
-QWEN_MODEL=qwen-plus
 
-TAVILY_API_KEY=
-SERPAPI_API_KEY=
-OPENWEATHER_API_KEY=
-
-FRONTEND_URL=http://localhost:5173
-```
-
-Chạy backend:
-
-```powershell
-python -m uvicorn app.main:app --reload --port 8000
-```
 
 Mở Swagger API:
 
