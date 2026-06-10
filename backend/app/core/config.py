@@ -6,11 +6,12 @@ class Settings(BaseSettings):
     app_name: str = "Travel AI Assistant"
     environment: str = "development"
 
-    # Google AI Studio / Gemini API key. LangChain reads GOOGLE_API_KEY.
-    google_api_key: str | None = None
-    gemini_model: str = "gemini-2.0-flash"
+    # Alibaba Cloud Model Studio / Qwen API
+    dashscope_api_key: str | None = None
+    dashscope_base_url: str = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+    qwen_model: str = "qwen-plus"
 
-    # Optional external APIs. The app runs with demo fallback data if these are empty.
+    # Optional external APIs
     tavily_api_key: str | None = None
     serpapi_api_key: str | None = None
     openweather_api_key: str | None = None

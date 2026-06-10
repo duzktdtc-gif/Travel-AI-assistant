@@ -4,6 +4,8 @@ pydantic==2.10.4
 pydantic-settings==2.7.1
 python-dotenv==1.0.1
 requests==2.32.3
+
 langchain-core==0.3.29
-langchain-google-genai==2.0.8
 langgraph==0.2.62
+
+openai>=1.0.0

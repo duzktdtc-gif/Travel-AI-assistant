@@ -1,55 +1,55 @@
-import os
-import time
-import threading
+from types import SimpleNamespace
 
-from langchain_google_genai import ChatGoogleGenerativeAI
+from openai import OpenAI
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from app.core.config import settings
 
 
-_call_lock = threading.Lock()
-_last_call_time = 0.0
-
-# Free tier của bạn đang báo quota 5 request/phút.
-# 60 / 5 = 12 giây. Để an toàn, mình để 13 giây.
-MIN_SECONDS_BETWEEN_CALLS = 5.0
-
-
-class RateLimitedLLM:
-    def __init__(self, llm):
-        self.llm = llm
+class QwenLLM:
+    def __init__(self, temperature: float = 0.2):
+        self.temperature = temperature
+        self.client = OpenAI(
+            api_key=settings.dashscope_api_key,
+            base_url=settings.dashscope_base_url,
+        )
 
     def invoke(self, messages):
-        global _last_call_time
+        converted_messages = []
 
-        with _call_lock:
-            now = time.time()
-            elapsed = now - _last_call_time
-            wait_time = MIN_SECONDS_BETWEEN_CALLS - elapsed
+        if isinstance(messages, str):
+            converted_messages.append({
+                "role": "user",
+                "content": messages
+            })
+        else:
+            for msg in messages:
+                if isinstance(msg, SystemMessage):
+                    role = "system"
+                elif isinstance(msg, AIMessage):
+                    role = "assistant"
+                elif isinstance(msg, HumanMessage):
+                    role = "user"
+                else:
+                    role = "user"
 
-            if wait_time > 0:
-                print(f"[Gemini Rate Limit] Waiting {wait_time:.1f}s before next request...")
-                time.sleep(wait_time)
+                converted_messages.append({
+                    "role": role,
+                    "content": str(getattr(msg, "content", msg))
+                })
 
-            _last_call_time = time.time()
+        response = self.client.chat.completions.create(
+            model=settings.qwen_model,
+            messages=converted_messages,
+            temperature=self.temperature,
+        )
 
-        return self.llm.invoke(messages)
+        content = response.choices[0].message.content
+        return SimpleNamespace(content=content)
 
 
 def get_llm(temperature: float = 0.2):
-    """
-    Return Gemini model from Google AI Studio.
-    If GOOGLE_API_KEY is missing, return None so nodes can use fallback demo logic.
-    """
-    if not settings.google_api_key:
+    if not settings.dashscope_api_key:
         return None
 
-    os.environ["GOOGLE_API_KEY"] = settings.google_api_key
-
-    llm = ChatGoogleGenerativeAI(
-        model=settings.gemini_model,
-        temperature=temperature,
-        max_retries=2,
-    )
-
-    return RateLimitedLLM(llm)
+    return QwenLLM(temperature=temperature)

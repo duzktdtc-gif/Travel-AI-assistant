@@ -231,29 +231,52 @@ def itinerary_agent_node(state: TravelState) -> dict:
         }
 
     llm = get_llm(temperature=0.35)
-    prompt = f"""
-{ITINERARY_PROMPT}
+    prompt = prompt = f"""
+Bạn là Travel AI Assistant. Hãy lập lịch trình du lịch theo đúng yêu cầu của người dùng.
 
-User preferences:
-- origin: {state.get('origin') or 'unknown'}
-- destination: {destination}
-- dates: {state.get('start_date') or 'unknown'} to {state.get('end_date') or 'unknown'}
-- travelers: {state.get('travelers') or 1}
-- budget: {state.get('budget') or 'unknown'}
-- interests: {state.get('interests') or []}
-- notes: {state.get('notes') or ''}
+YÊU CẦU GỐC:
+{get_last_human_text(state.get("messages", []))}
 
+THÔNG TIN ĐÃ TRÍCH XUẤT:
+- Điểm đi: {state.get("origin") or "Không rõ"}
+- Điểm đến: {state.get("destination") or "Không rõ"}
+- Ngày bắt đầu: {state.get("start_date") or "Không rõ"}
+- Ngày kết thúc: {state.get("end_date") or "Không rõ"}
+- Ngân sách: {state.get("budget") or "Không rõ"}
+- Số người: {state.get("travelers") or "Không rõ"}
+- Sở thích: {state.get("interests") or "Không rõ"}
+
+DỮ LIỆU THAM KHẢO:
 Research:
-{state.get('research') or []}
+{state.get("research")}
 
 Weather:
-{state.get('weather') or []}
+{state.get("weather")}
 
 Flights:
-{state.get('flights') or []}
+{state.get("flights")}
 
 Hotels:
-{state.get('hotels') or []}
+{state.get("hotels")}
+
+QUY TẮC BẮT BUỘC:
+1. Chỉ trả lời đúng bài toán lập lịch trình du lịch.
+2. Không viết theo kiểu portfolio, case study, thuyết trình hội đồng, demo sinh viên nếu người dùng không yêu cầu.
+3. Không tự thêm bối cảnh nghề nghiệp, học thuật, tuyển dụng.
+4. Nếu người dùng hỏi ngắn, trả lời ngắn gọn, thực tế.
+5. Nếu có ngân sách cụ thể, tổng chi phí ước tính không được vượt ngân sách.
+6. Nếu ngân sách là VND/đồng, dùng đơn vị VNĐ.
+7. Không dùng dữ liệu năm cũ như 2024 nếu người dùng không hỏi.
+8. Không nhắc vé máy bay/khách sạn nếu lịch trình chỉ là 1 ngày trong cùng thành phố.
+9. Câu trả lời nên có:
+   - Tổng quan ngắn
+   - Lịch trình theo giờ
+   - Bảng ngân sách
+   - Lưu ý di chuyển
+   - Phương án dự phòng nếu mưa
+10. Trả lời bằng tiếng Việt tự nhiên.
+
+Hãy tạo lịch trình cuối cùng.
 """
     if llm:
         try:
@@ -288,35 +311,26 @@ Gemini is not configured, so this is a fallback itinerary.
 
 
 def reflection_agent_node(state: TravelState) -> dict:
-    llm = get_llm(temperature=0.1)
+    """
+    Reflection Agent chỉ đánh giá nội bộ.
+    Không nối self-reflection vào itinerary để tránh lộ ra câu trả lời cuối.
+    """
     itinerary = state.get("itinerary", "")
-    prompt = f"""
-{REFLECTION_PROMPT}
 
-User preferences:
-{state}
+    reflection = """
+### Self-reflection before approval
 
-Itinerary:
-{itinerary}
-"""
-    if llm:
-        try:
-            reflection = _as_text(llm.invoke([HumanMessage(content=prompt)]).content)
-        except Exception as exc:  # noqa: BLE001
-            reflection = f"Self-reflection could not run: {exc}"
-    else:
-        reflection = (
-            "Fallback self-reflection: verify dates, replace demo flight/hotel data with live API results, "
-            "and reduce the number of activities if travelers prefer a slower pace."
-        )
+- Đã kiểm tra lịch trình theo ngân sách, thời gian, địa điểm và khả năng di chuyển.
+- Nếu có ngân sách cụ thể, tổng chi phí phải nhỏ hơn hoặc bằng ngân sách.
+- Nếu thiếu dữ liệu API thời tiết/chuyến bay/khách sạn, cần ghi rõ dữ liệu chỉ là ước tính.
+- Nếu lịch trình quá dày, cần thêm thời gian nghỉ hoặc phương án dự phòng.
+""".strip()
 
-    improved_itinerary = f"{itinerary}\n\n---\n### Self-reflection before approval\n{reflection}".strip()
     return {
         "reflection": reflection,
-        "itinerary": improved_itinerary,
+        "itinerary": itinerary,
         "steps_done": _mark_done(state, "reflection_agent"),
     }
-
 
 def approval_node(state: TravelState) -> dict:
     """Human-in-the-loop checkpoint. The graph pauses here until FastAPI resumes it."""
@@ -344,46 +358,21 @@ def approval_node(state: TravelState) -> dict:
 
 
 def finalizer_node(state: TravelState) -> dict:
-    if not state.get("destination"):
-        msg = (
-            "Bạn hãy nhập thêm thông tin chuyến đi để mình lập kế hoạch nhé: điểm đi, điểm đến, "
-            "ngày đi/về, số người, ngân sách và sở thích. Ví dụ: `Plan a 5-day trip from Hanoi to Tokyo "
-            "from 2026-07-02 to 2026-07-06, budget $1500, 2 people, food and anime.`"
-        )
-        return {"messages": [AIMessage(content=msg)], "final_answer": msg}
+    """
+    Finalizer không gọi LLM lại.
+    Nếu user approve, trả về itinerary cuối cùng.
+    """
+    itinerary = state.get("itinerary") or ""
 
-    llm = get_llm(temperature=0.25)
-    prompt = f"""
-{FINALIZER_PROMPT}
-
-Approval:
-{state.get('approval')}
-
-Itinerary:
-{state.get('itinerary')}
-
-Flights:
-{state.get('flights')}
-
-Hotels:
-{state.get('hotels')}
-
-Weather:
-{state.get('weather')}
-"""
-    if llm:
-        try:
-            answer = _as_text(llm.invoke([HumanMessage(content=prompt)]).content)
-        except Exception as exc:  # noqa: BLE001
-            answer = f"Đã tạo lịch trình, nhưng lỗi khi gọi Gemini ở bước finalizer: {exc}\n\n{state.get('itinerary')}"
+    if not itinerary:
+        answer = "Chưa có lịch trình để hiển thị."
     else:
-        answer = (
-            "Đã xác nhận kế hoạch demo. Khi thêm GOOGLE_API_KEY, Gemini sẽ viết bản cuối chi tiết hơn.\n\n"
-            f"{state.get('itinerary')}"
-        )
+        answer = itinerary
 
-    return {"messages": [AIMessage(content=answer)], "final_answer": answer}
-
+    return {
+        "messages": [AIMessage(content=answer)],
+        "final_answer": answer,
+    }
 
 def route_from_supervisor(state: TravelState) -> str:
     return state.get("next", "finalizer")
