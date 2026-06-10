@@ -16,7 +16,7 @@ Sau khi người dùng nhập yêu cầu:
 
 Hệ thống tạo bản nháp lịch trình và hiển thị khung xác nhận. Người dùng có thể chọn **Đồng ý kế hoạch** hoặc nhập góp ý để agent lập lại lịch trình.
 
-![Khung xác nhận kế hoạch](docs/images/Screenshot 2026-06-11 004800.png)
+![Khung xác nhận kế hoạch](docs/images/a.png)
 
 ---
 
@@ -24,7 +24,7 @@ Hệ thống tạo bản nháp lịch trình và hiển thị khung xác nhận.
 
 Kết quả trả về được render bằng Markdown, bao gồm phần tổng quan, lịch trình theo giờ, hoạt động cụ thể và ghi chú thực tế. Với yêu cầu đi chơi Hà Nội 1 ngày, hệ thống đề xuất các điểm như Hồ Gươm, Đền Ngọc Sơn, Văn Miếu, Phố cổ, Hồ Tây và các địa điểm ăn uống phù hợp ngân sách.
 
-![Lịch trình theo giờ](docs/images/Screenshot 2026-06-11 004946.png)
+![Lịch trình theo giờ](docs/images/b.png)
 
 ---
 
@@ -32,7 +32,7 @@ Kết quả trả về được render bằng Markdown, bao gồm phần tổng 
 
 Ngoài lịch trình, hệ thống còn tự động tạo bảng ngân sách chi tiết. Trong ví dụ này, tổng chi phí dự kiến là khoảng **945.000 VNĐ**, thấp hơn ngân sách người dùng đưa ra là **1.000.000 VNĐ**. Hệ thống cũng đưa ra lưu ý di chuyển và phương án dự phòng nếu thời tiết xấu.
 
-![Bảng ngân sách và phương án dự phòng](docs/images/Screenshot 2026-06-11 004954.png)
+![Bảng ngân sách và phương án dự phòng](docs/images/c.png)
 
 ---
 
