@@ -6,7 +6,7 @@ Phiên bản hiện tại sử dụng **Alibaba Cloud Qwen API** thông qua Open
 
 ---
 
-## kết quả
+## Giao diện
 
 ### 1. Tạo lịch trình và yêu cầu người dùng xác nhận
 
