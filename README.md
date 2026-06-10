@@ -85,18 +85,22 @@ copy .env.example .env
 Open `backend/.env` and add keys:
 
 ```env
-GOOGLE_API_KEY=your_google_ai_studio_key
-GEMINI_MODEL=gemini-2.0-flash
-TAVILY_API_KEY=your_tavily_key
-SERPAPI_API_KEY=your_serpapi_key
-OPENWEATHER_API_KEY=your_openweather_key
+DASHSCOPE_API_KEY=sk-your-API
+DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+QWEN_MODEL=qwen-plus
+
+TAVILY_API_KEY=
+SERPAPI_API_KEY=
+OPENWEATHER_API_KEY=
+
 FRONTEND_URL=http://localhost:5173
+
 ```
 
 Start server:
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+ python -m uvicorn app.main:app --reload --port 8000
 ```
 
 Check:
